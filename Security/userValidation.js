@@ -9,11 +9,6 @@ const validateToken = async function(req, res, next){
         if(err) {
             res.status(400).send({msg:"Token Not Verified", error:err}); 
         }
-        else{
-            req.user = user;
-            res.status(200).send({msg:"token Verified", token:token});
-            next();
-        }
     })
 }
 module.exports = validateToken;

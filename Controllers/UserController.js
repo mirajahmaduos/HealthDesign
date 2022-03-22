@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv').config();
 var nodemailer = require('nodemailer');
+const Cryptr = require('cryptr');
 
 //create user post request
 exports.Register =async function(req, res){
@@ -15,8 +16,8 @@ exports.Register =async function(req, res){
             if(err)
                return res.status(400).send({msg:"User Registeration Failed", err:err}); 
             //if user is created then create a toke
-            var token = jwt.sign(user.Email, process.env.SECRET_KEY);
-            res.status(200).send({msg:"User Registered with Token assigned", token:token, user:user});
+            // var token = jwt.sign({Email:user.Email, _id:user._id}, process.env.SECRET_KEY);
+            res.status(200).send({msg:"User Registered Successfully", user:user});
         })
     // }catch(error){
     //     res.status(400).send({error:error.message, msg:"error in creating user", success:false});
@@ -25,14 +26,15 @@ exports.Register =async function(req, res){
 
 //post request login
 exports.Login =async function(req, res){
-    const {email, password} = req.body;
-    userModel.findOne({Email:email}, function(err, user){
+    const {email, password} = req.body; //console.log(email);
+    // const user =await userModel.findOne({Email:email}); console.log(user); return;
+     userModel.findOne({Email:email}, function(err, user){ //console.log(user);
         if(err) return res.status(400).send({msg:"Error in User finding", err:err}); 
         if(!user) return res.status(200).send({msg:"Email Not Exist", user:user}); 
         //if user found on email then check password
-        var passwordIsValid = bcrypt.hashSync(password, user.Password);
+        var passwordIsValid = bcrypt.compareSync(password, user.Password);
         if(passwordIsValid){
-            var token = jwt.sign({email:user.Email, id:user._id}, process.env.SECRET_KEY);
+            var token = jwt.sign({Email:user.Email, _id:user._id}, process.env.SECRET_KEY);
             res.status(200).send({msg:"Login Successful", token:token, user:user});
         }else{
             res.status(400).send({msg:"Invalid Password"})
@@ -44,7 +46,8 @@ exports.Login =async function(req, res){
 //get all users --get request
 exports.getAllUsers =async function (req, res){
     //get the user on token if user is verified on token then return the users
-    userModel.find((err, result)=>{
+   await userModel.find((err, result)=>{
+       console.log(result);console.log(err)
         if(!err){
             res.status(200).send({Users:result});
         }else{
@@ -140,7 +143,7 @@ exports.forgotPassword = async function(req, res){
                         return res.status(400).send({msg:"Problem occured ", err:err, account:account});
                     }
                 })
-                var token = jwt.sign({Email:account.Email}, process.env.SECRET_KEY);
+                // var token = jwt.sign({Email:account.Email, _id:account._id}, process.env.SECRET_KEY);
                 res.status(200).send({msg:"email sent with Verification Code",Code:verificationCode,
                 token:token, info:info.envelope});
             }
@@ -150,37 +153,95 @@ exports.forgotPassword = async function(req, res){
 }
 exports.resetPassword = async function(req, res){
     //get verification code, password and token from body and compare code on token 
-    const {verificationCode, password, token} = req.body;
+    const {verificationCode, password} = req.body;
     // res.send(req.body); return;
     //verify jwt and extract email
-    jwt.verify(token, process.env.SECRET_KEY, function(err, decode){
+    jwt.verify(token, process.env.SECRET_KEY, function(err, decode){ //console.log(decode.Email); return;
         if(err) return res.status(400).send({msg:"token not verified"});
         if(!decode.Email) return res.status(400).send({msg:"No user Exist on provided token"});
         // res.send(user.Email); return;  //extract email from token
         //find user on email
-        userModel.findOne({Email:decode.Email}, function(err, user){
+         userModel.findOne({Email:decode.Email}, function(err, user){ //console.log(user);
             //if verification code matches
             if(user.VerificationCode === verificationCode){
                 // user.Password = password;
-                userModel.updateOne({Pasword:password}, function(err, result){
+                userModel.updateOne({Email:decode.Email},{Password:bcrypt.hashSync(password, 10)}, function(err, result){ console.log(result);
                     if(!err && result){
-                        res.status(200).send({msg:"Your Password is Updated Successfully"});
+                        res.status(200).send({msg:"Your Password is Updated Successfully", user:result});
                     }
                 })        
             }else{
                 res.status(400).send({msg:"Verification Code does not match"})
             }
-        }); 
+       }); 
+        // userModel.findOneAndUpdate({Email:decode.Email}, {Password:password}, function(err, result){
+        //     if(err) return res.status(400).send({msg:"error in resetting Password", error:err});
+        //     if(!result) return res.status(400).send({msg:"User Not Found", result:null});
+        //     if(result.VerificationCode === verificationCode)
+        //     return res.status(200).send({msg:"Password updated/reset successful", result:result});
+        // })
         
     });
 }
 //update / change password
 exports.changePassword = async function(req, res){
-    console.log(req.body);
+    const {password, confirmPassword, oldPassword, token} = req.body;
+    /* const cryptr = new Cryptr('secretkey');
+    const name = cryptr.encrypt('miraj');
+    res.send({decrypt:cryptr.decrypt(name), encrypt:name}); return; */
+    jwt.verify(token, process.env.SECRET_KEY, function(err, decoded){
+        if(err) res.status(400).send(err);
+        // res.send(decoded);return;
+        // res.status(200).send(decoded.Email);
+        userModel.findOne({Email:decoded.Email}, function(err, user){
+            if(err) return res.status(400).send(err);
+            if(!user) return res.status(400).send({msg:"User Not Found"});
+            // res.send(user); return;
+            //verify password, confirmpassword , and old password should not same to new password
+            var passwordIsValid = bcrypt.compareSync(oldPassword, user.Password)
+            // console.log(passwordIsValid);
+            if(passwordIsValid){
+                // res.status(400).send("password verified. now update the password");
+                if(password === confirmPassword ){
+                    // res.status(400).send("Password and Confirm Password Match");
+                    userModel.updateOne( {Password:bcrypt.hashSync(password)}, (err, user)=>{
+                        if(err) return res.status(400).send({msg:"Error in updating Password", err:err});
+                        if(!user) return res.status(400).send({msg:"user not found"});
+                        res.status(200).send({msg:"Password Updated Successfully",email:user.Email, pass:user.Password});
+                    })
+                }else{
+                    res.status(400).send("Password and Confirm Password does Not Match");
+                }
+            }else{
+                res.status(400).send("Your Old password does not match");
+            }
+        })
+    })
+    //if(password === confirmPassword && )
+    // console.log(req.body);
 }
 // delete user info-- delete request 
 exports.deleteUser =async function(req, res){
+    // console.log(req.body);
+    //get id from verified token and delete user 
+    const {token} = req.body;
+    // console.log(token);
+    // token = req.headers.authorization.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.SECRET_KEY);
+        // res.status(200).send(decoded);
+        userModel.findOne({_id:decoded._id}, function(err, user){
+            if(!err && user){
+                userModel.deleteOne(user, function(err){
+                    if(!err){
+                        res.status(200).send("User Deleted Successfully");
+                    }
+                })
+        }else{
+            res.status(400).send({msg:"Error in deleting user", err:err});
+        }
+        })
     
+    // console.log(decoded);
 }
 
 

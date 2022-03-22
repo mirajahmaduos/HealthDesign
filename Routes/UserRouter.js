@@ -41,4 +41,6 @@ UserRouter.post('/forgotpassword', UserController.forgotPassword);
 UserRouter.post('/resetpassword', UserController.resetPassword);
 //update / change password 
 UserRouter.post('/changepassword', UserController.changePassword);
+//delete user
+UserRouter.delete('/delete', UserController.deleteUser);
 module.exports = UserRouter;
