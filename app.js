@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const bodyParser = require('body-parser');
 dotenv.config();
 const cors = require('cors');
+const multer = require('multer');
 
 const port = process.env.port || 3005;
 const app = express();
@@ -12,6 +13,7 @@ const database = require('./Database/ConnectionDB');
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
 app.use(cors());
+// app.use(multer());
 //setting body parser
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:true}));
@@ -24,8 +26,14 @@ app.get('/home', (req, res)=>{
 
 //registering routes 
 const userRoutes = require('./Routes/UserRouter');
-const res = require('express/lib/response');
+const certificateRoutes = require('./Routes/CertificateRouter');
+const recipeRoutes = require('./Routes/RecipeRouter');
+const serviceRoutes = require('./Routes/ServiceRouter');
+
 app.use('/user', userRoutes);
+app.use('/certificate', certificateRoutes);
+app.use('/recipe', recipeRoutes);
+app.use('/service', serviceRoutes);
 
 //setting port
 app.listen(port, (err)=>{

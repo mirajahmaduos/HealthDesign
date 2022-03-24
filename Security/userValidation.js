@@ -5,9 +5,12 @@ const validateToken = async function(req, res, next){
     if(!token){
        return res.status(400).send({msg:"Token not Found", token:null})
     }
-    jwt.verify(token, process.env.SECRET_KEY, function(err, user){
+    jwt.verify(token, process.env.SECRET_KEY, function(err, decoded){
         if(err) {
             res.status(400).send({msg:"Token Not Verified", error:err}); 
+        }else{
+            req.decoded = decoded;
+            next();
         }
     })
 }

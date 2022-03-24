@@ -47,13 +47,13 @@ exports.Login =async function(req, res){
 exports.getAllUsers =async function (req, res){
     //get the user on token if user is verified on token then return the users
    await userModel.find((err, result)=>{
-       console.log(result);console.log(err)
+      // console.log(result); //console.log(err)
         if(!err){
             res.status(200).send({Users:result});
         }else{
             res.status(400).send({msg:"Error in Returning Users", err:err});
         }
-    })
+    }).clone();
 }
 
 // get specific user  ---get request by id
@@ -90,7 +90,7 @@ exports.forgotPassword = async function(req, res){
     
     //1- check user email if exist then send code to email
     //2- get the code and verify it matched then update the password for given user
-    userModel.findOne({Email:req.body.Email}, function(err, account){
+    userModel.findOne({Email:req.body.Email}, function(err, account){ 
         if(err) return res.status(400).send({msg:"User/Account Error", error:err});
         if(!account) return res.status(400).send({msg:"User/Account Not Exist", account:account});
         // res.status(200).send({msg:"User Account", account:account});
@@ -102,8 +102,8 @@ exports.forgotPassword = async function(req, res){
         } */
         var verificationCode =Math.random().toString().substring(2,8);
         //  sentCode = verificationCode;
-        const senderAccount = 'mirajahmaduos@gmail.com';
-        const senderPasword = '!Dell@11118';
+        const senderAccount = process.env.EMAIL;
+        const senderPasword = process.env.PASSWORD;
         var emailSubject = 'Your Account Verification Code';
         // res.send({token:token.length, code:verificationCode, random:Math.random()}); return ;
         var transporter = nodemailer.createTransport({
@@ -144,8 +144,7 @@ exports.forgotPassword = async function(req, res){
                     }
                 })
                 // var token = jwt.sign({Email:account.Email, _id:account._id}, process.env.SECRET_KEY);
-                res.status(200).send({msg:"email sent with Verification Code",Code:verificationCode,
-                token:token, info:info.envelope});
+                res.status(200).send({msg:"email sent with Verification Code",Code:verificationCode, info:info.envelope});
             }
         })
         
@@ -153,27 +152,34 @@ exports.forgotPassword = async function(req, res){
 }
 exports.resetPassword = async function(req, res){
     //get verification code, password and token from body and compare code on token 
-    const {verificationCode, password} = req.body;
+    const {verificationCode, password, confirmPassword} = req.body;
     // res.send(req.body); return;
     //verify jwt and extract email
-    jwt.verify(token, process.env.SECRET_KEY, function(err, decode){ //console.log(decode.Email); return;
-        if(err) return res.status(400).send({msg:"token not verified"});
-        if(!decode.Email) return res.status(400).send({msg:"No user Exist on provided token"});
+    // jwt.verify(token, process.env.SECRET_KEY, function(err, decode){ //console.log(decode.Email); return;
+        // if(err) return res.status(400).send({msg:"token not verified"});
+        // if(!decode.Email) return res.status(400).send({msg:"No user Exist on provided token"});
         // res.send(user.Email); return;  //extract email from token
         //find user on email
-         userModel.findOne({Email:decode.Email}, function(err, user){ //console.log(user);
-            //if verification code matches
-            if(user.VerificationCode === verificationCode){
-                // user.Password = password;
-                userModel.updateOne({Email:decode.Email},{Password:bcrypt.hashSync(password, 10)}, function(err, result){ console.log(result);
-                    if(!err && result){
-                        res.status(200).send({msg:"Your Password is Updated Successfully", user:result});
-                    }
-                })        
-            }else{
-                res.status(400).send({msg:"Verification Code does not match"})
-            }
-       }); 
+        if(password === confirmPassword){
+            userModel.findOne({VerificationCode:verificationCode}, function(err, user){ //console.log(user); return;
+                //if verification code matches
+                if(err) return res.status(400).send({msg:"User Account Not Found Error", error:err});
+                if(!user) return res.status(400).send({msg:"User Account Not Exist. Invalid code provided", user:null});
+                // if(user.VerificationCode === verificationCode){
+                    // user.Password = password;
+                    userModel.updateOne({VerificationCode:verificationCode},{Password:bcrypt.hashSync(password, 10)},{new:true}, function(err, result){ //console.log(result);
+                        if(!err && result){
+                            res.status(200).send({msg:"Your Password is Updated Successfully"});
+                        }
+                    })        
+                // }else{
+                //     res.status(400).send({msg:"Verification Code does not match"})
+                // }
+           }); 
+        }else{
+            res.status(400).send({msg:"Password does not match Confirm Password"});
+        }
+         
         // userModel.findOneAndUpdate({Email:decode.Email}, {Password:password}, function(err, result){
         //     if(err) return res.status(400).send({msg:"error in resetting Password", error:err});
         //     if(!result) return res.status(400).send({msg:"User Not Found", result:null});
@@ -181,7 +187,7 @@ exports.resetPassword = async function(req, res){
         //     return res.status(200).send({msg:"Password updated/reset successful", result:result});
         // })
         
-    });
+    // });
 }
 //update / change password
 exports.changePassword = async function(req, res){
@@ -193,7 +199,7 @@ exports.changePassword = async function(req, res){
         if(err) res.status(400).send(err);
         // res.send(decoded);return;
         // res.status(200).send(decoded.Email);
-        userModel.findOne({Email:decoded.Email}, function(err, user){
+        userModel.findOne({Email:decoded.Email}, function(err, user){ //console.log(decoded.Email); return;
             if(err) return res.status(400).send(err);
             if(!user) return res.status(400).send({msg:"User Not Found"});
             // res.send(user); return;
@@ -204,10 +210,12 @@ exports.changePassword = async function(req, res){
                 // res.status(400).send("password verified. now update the password");
                 if(password === confirmPassword ){
                     // res.status(400).send("Password and Confirm Password Match");
-                    userModel.updateOne( {Password:bcrypt.hashSync(password)}, (err, user)=>{
+                    var updPass = bcrypt.hashSync(password, 10);
+                    userModel.updateOne({Email:decoded.Email}, {$set:{"Password":updPass}}, (err, upduser)=>{
+                        // console.log(upduser); return;
                         if(err) return res.status(400).send({msg:"Error in updating Password", err:err});
                         if(!user) return res.status(400).send({msg:"user not found"});
-                        res.status(200).send({msg:"Password Updated Successfully",email:user.Email, pass:user.Password});
+                        res.status(200).send({msg:"Password Changed Successfully",email:upduser.Email, pass:upduser.Password});
                     })
                 }else{
                     res.status(400).send("Password and Confirm Password does Not Match");
