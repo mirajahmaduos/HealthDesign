@@ -10,9 +10,9 @@ const post = Schema({
         type:String,
         required:true
     },
-    Fitness_id:{type: Schema.Types.ObjectId, ref: "Fitness", required:true},
-    Nutrition_id:{type: Schema.Types.ObjectId, ref: "Nutrition", required:true},
-    Excercise_id:{type: Schema.Types.ObjectId, ref: "Excercise", required:true},
+    Fitness_id:{type: Schema.Types.ObjectId, ref: "FitnessModel"},
+    Nutrition_id:{type: Schema.Types.ObjectId, ref: "NutritionModel"},
+    Excercise_id:{type: Schema.Types.ObjectId, ref: "ExcerciseModel"},
     Created_at:{
         type: Date,
         default: Date.now

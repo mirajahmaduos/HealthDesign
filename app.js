@@ -29,11 +29,22 @@ const userRoutes = require('./Routes/UserRouter');
 const certificateRoutes = require('./Routes/CertificateRouter');
 const recipeRoutes = require('./Routes/RecipeRouter');
 const serviceRoutes = require('./Routes/ServiceRouter');
+const newpostRoutes = require('./Routes/NewPostRouter');
+const nutritionRoutes = require('./Routes/NutritionRoutes');
+const postRoutes = require('./Routes/PostRouter');
+const commentRoutes = require('./Routes/CommentRouter');
+const reactionRoutes = require('./Routes/ReactionRouter');
 
 app.use('/user', userRoutes);
 app.use('/certificate', certificateRoutes);
 app.use('/recipe', recipeRoutes);
 app.use('/service', serviceRoutes);
+app.use('/newpost', newpostRoutes);
+app.use('/nutrition', nutritionRoutes);
+app.use('/post', postRoutes);
+app.use('/comment', commentRoutes);
+app.use('/reaction', reactionRoutes);
+
 
 //setting port
 app.listen(port, (err)=>{

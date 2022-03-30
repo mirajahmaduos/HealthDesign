@@ -11,7 +11,8 @@ const fitness = mongoose.Schema({
     },
     Fitness_pricing:{
         type:String, enum :['Free', 'Premium'], default: 'Free'
-    }
+    },
+    Fitness_banner_image:{type:String, required:true}
 }, {versionKey:false});
 
 module.exports = mongoose.model("FitnessModel", fitness, collection="Fitness");
