@@ -10,10 +10,12 @@ exports.Register =async function(req, res){
     // console.log(req.body);
     var userData = req.body;
     userData.ProfilePhoto = req.file.filename;
+    // console.log(userData.ProfilePhoto); return;
+    // profilePic = req.file.filename;
     userData.Password = bcrypt.hashSync(req.body.Password, 10);
     // try{
         userModel.create(userData, (err, user)=>{
-            if(err)
+            if(err) //console.log(err);
                return res.status(400).send({msg:"User Registeration Failed", err:err}); 
             //if user is created then create a toke
             // var token = jwt.sign({Email:user.Email, _id:user._id}, process.env.SECRET_KEY);

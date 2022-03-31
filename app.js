@@ -17,7 +17,7 @@ app.use(cors());
 //setting body parser
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:true}));
-app.use(__dirname+'/Uploads', express.static('Uplaods'))
+app.use(__dirname+'/Uploads', express.static('Uploads'))
 // app.use(__dirname+'/uploads', express.static('uploads'))
 app.get('/home', (req, res)=>{
     res.send('Welcome to Login System');
@@ -34,6 +34,7 @@ const nutritionRoutes = require('./Routes/NutritionRoutes');
 const postRoutes = require('./Routes/PostRouter');
 const commentRoutes = require('./Routes/CommentRouter');
 const reactionRoutes = require('./Routes/ReactionRouter');
+const friendRoutes = require("./Routes/FriendsListRouter");
 
 app.use('/user', userRoutes);
 app.use('/certificate', certificateRoutes);
@@ -44,7 +45,7 @@ app.use('/nutrition', nutritionRoutes);
 app.use('/post', postRoutes);
 app.use('/comment', commentRoutes);
 app.use('/reaction', reactionRoutes);
-
+app.use('/friend', friendRoutes);
 
 //setting port
 app.listen(port, (err)=>{

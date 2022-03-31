@@ -9,29 +9,29 @@ exports.addReaction = async (req, res)=>{
         Post_id:post,
         Reaction_value:reaction
     }
-    try{
+    // try{ //console.log(user); return;
     //restricting duplicate documents
-    reactionModel.find({}, (err, result)=>{
-       
-        result.forEach(function(reaction){
-            // console.log(reaction); return;
-            //stop duplicate entries
-            if(reaction.Post_id == post && reaction.User_id == user){
-                 res.status(200).send({msg:"Reaction on this post of this user exist", Reaction:reaction});
-            }else{
-                reactionModel.create(reactionData, (err, result)=>{
-                    if(!err && result != null){
-                          res.status(200).send({msg:"Reaction Added", reaction:result});
-                    }else{
-                          res.status(400).send({msg:"Couldn't added", error:err, reaction:[]})
-                    }
-                })
-            }
-        })
-    })
-}catch(err){
-    res.status(200).send(err);
-}
+        await reactionModel.find({Post_id: req.body.post, User_id:req.body.user}, async (err, result)=>{
+                // console.log(result); return;  //when not exist return [] and its length is 0
+                // console.log(result.length); return;
+                // console.log(Array.isArray(result)); return;
+                //stop duplicate entries. if data exist for the given user & post
+                // if(!result.length){console.log('reaction not exist'); } return;
+                if(err || result.length > 0){
+                    res.status(200).send({msg:"Reaction on this post already exist.",error:err, Reaction:result});
+                }else{
+                   await reactionModel.create(reactionData, (err, result)=>{
+                        if(!err && result != null){
+                            res.status(200).send({msg:"Reaction Added", reaction:result});
+                        }else{
+                            res.status(400).send({msg:"Couldn't added", error:err, reaction:[]})
+                        }
+                    })
+                }
+        }).clone()
+    // }catch(err){
+    //     res.status(200).send(err);
+    // }
 }
 exports.viewReactionByUser = async (req, res)=>{
     // console.log(req.query.userId);
@@ -108,6 +108,7 @@ exports.reactionStatsByPost = async(req, res)=>{
         }}
     ], (err, result)=>{
         // console.log(result);
+        if(err) return res.status(200).send({msg:"Error in Reaction stats by Post", error:err});
         res.status(200).send({stats:result});
     })
     

@@ -5,7 +5,7 @@ const verifyToken = require('../Security/userValidation');
 
 const storage = multer.diskStorage({
     destination: function(req, file, cb){
-      cb(null, './uploads/')
+      cb(null, './Uploads/User')
     },
     filename: function(req, file, cb){
     //   const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
@@ -22,8 +22,8 @@ const storage = multer.diskStorage({
     }
 };
 const upload = multer({storage:storage, limits:{
-    fileSize: 1024 * 1024 *8
-}, fileFilter : fileFilter});
+    fileSize: '8mb'
+}});
 const UserRouter = express.Router();
 //register /signup / create user
 UserRouter.post('/register', upload.single("ProfilePhoto"), UserController.Register);
